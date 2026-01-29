@@ -1,0 +1,74 @@
+-- Universal ESP Toggle Script (Pressione F para ligar/desligar)
+local uis = game:GetService("UserInputService")
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+local espEnabled = false
+local espBoxes = {}
+
+function createESPBox(part)
+    local box = Instance.new("BoxHandleAdornment")
+    box.Size = part.Size
+    box.Adornee = part
+    box.AlwaysOnTop = true
+    box.ZIndex = 5
+    box.Color3 = Color3.fromRGB(255,0,0)
+    box.Transparency = 0.7
+    box.Parent = part
+    return box
+end
+
+function addESPToCharacter(character)
+    for _, part in ipairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            local box = createESPBox(part)
+            table.insert(espBoxes, box)
+        end
+    end
+end
+
+function removeESP()
+    for _, box in ipairs(espBoxes) do
+        if box and box.Parent then
+            box:Destroy()
+        end
+    end
+    espBoxes = {}
+end
+
+function toggleESP()
+    espEnabled = not espEnabled
+    removeESP()
+    if espEnabled then
+        for _, player in ipairs(players:GetPlayers()) do
+            if player ~= localPlayer and player.Character then
+                addESPToCharacter(player.Character)
+            end
+        end
+    end
+end
+
+-- Atualiza ESP se alguém entrar ou respawnar
+players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        if espEnabled then
+            wait(1)
+            addESPToCharacter(character)
+        end
+    end)
+end)
+for _, player in ipairs(players:GetPlayers()) do
+    if player ~= localPlayer then
+        player.CharacterAdded:Connect(function(character)
+            if espEnabled then
+                wait(1)
+                addESPToCharacter(character)
+            end
+        end)
+    end
+end
+
+uis.InputBegan:Connect(function(inp, processed)
+    if not processed and inp.KeyCode == Enum.KeyCode.F then
+        toggleESP()
+    end
+end)
